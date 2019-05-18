@@ -1,0 +1,142 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <time.h>
+
+using namespace std;
+
+#define NUM_THREADS     5
+
+char dosya1 [5000][201];
+char dosya2 [10000][201];
+char dosya3 [15000][201];
+
+const double match = 3.621354295;
+const double gap = -1.832482334;
+const double mismatchs = -2.451795405;  
+
+void atama();
+void hesap();
+int compare (const void * a, const void * b)
+{
+	return ( *(double*)a - *(double*)b );
+}
+int main(void)
+{
+	
+   clock_t tic = clock();
+
+   atama();//fasta dosyalardan verileri dizilere almak için
+   hesap();
+
+   clock_t toc = clock();
+   printf("Toplam Süre: %f saniye\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+
+
+   while (1){getchar();}
+   
+}
+//5K_Sequence     10K_Sequence		15K_sequence
+void hesap()
+{
+	char dizi1[201], dizi2[201];
+	double dizi[201][201];
+	int i=0, j=0, k=0, l=0, m=0;
+	//int x=0, y=0;
+	double ilk;
+	double yirmi[20];
+	
+	for(i=0;i<201;i++)
+	{
+		for(j=0;j<201;j++)
+		{
+			dizi[i][j]=0.0;
+		}
+	}
+	for(i=0;i<20;i++)
+	{
+		yirmi[i]=0.0;
+	}
+	#pragma omp parallel 
+	for (i=0;i<15000;i++)//tüm satırlar için hesaplaması için
+	{
+		for(j=0;j<201;j++)//karşılaştırılacak mevcut satırı ilk diziye almak için
+		{
+			dizi1[j]=dosya3[i][j];
+		}
+		for(j=0;j<15000;j++)//ilk diziyi diğer tüm satırlarla karşılaştırmak için
+		{
+			//cout<<i<<" "<<j<<":"<<dizi[200][200]<<", ";
+			for(m=0;m<201;m++)//ilk diziyle karşılaştırılacak satırı almak için
+			{
+				dizi2[m]=dosya3[j][m];
+			}
+			for(k=0;k<201;k++)//ilk dizinin tüm değerleriyle karşılaştırmak için
+			{
+				//cout<<dizi1<<dizi2<<endl;//cout<<k<<" ";//endl;
+				for(l=0;l<201;l++)//ikinci dizinin tüm değerleriyle karşılaştırmak için
+				{
+					
+					if(dizi1[k]==' '||dizi2[l]==' ')//eğer boşluk varsa
+					{
+						dizi[k][l]=gap;
+					}
+					else if(dizi1[k]==dizi2[l])//harfler birbirine eşitse
+					{
+						if(k==0||l==0)
+						{
+							dizi[k][l]==match; 
+						}
+						else
+						{
+							if(dizi[k-1][l]<dizi[k][l-1])
+							{
+								dizi[k][l]=dizi[k][l-1]+match; 
+							}
+							else
+							{
+								dizi[k][l]=dizi[k-1][l]+match; 
+							}
+						}
+					}
+					else if(dizi1[k]!=dizi2[l])//harfler eşit değilse
+					{
+						if(k==0||l==0)
+						{
+							dizi[k][l]==mismatchs; 
+						}
+						else
+						{
+							if(dizi[k-1][l]<dizi[k][l-1])
+							{
+								dizi[k][l]=dizi[k][l-1]+mismatchs; 
+							}
+							else
+							{
+								dizi[k][l]=dizi[k-1][l]+mismatchs; 
+							}
+						}
+					}
+				}
+				if (k==200)
+				{
+					ilk=dizi[200][200];
+					if(yirmi[0]<ilk)
+					{
+						yirmi[0]=ilk;
+						qsort(yirmi,20,sizeof(double),compare);
+					}
+				}
+			}
+		}	
+		cout<<i<<" ";
+	}
+	cout<<endl;
+	for(i=0;i<20;i++)
+	{
+		cout<<yirmi[i]<<endl;
+	}	
+}
